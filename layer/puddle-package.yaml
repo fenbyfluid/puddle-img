@@ -1,0 +1,27 @@
+# METABEGIN
+# X-Env-Layer-Name: puddle-package
+# X-Env-Layer-Category: general
+# X-Env-Layer-Desc: Build and install puddle package.
+#
+# X-Env-VarPrefix: puddle
+#
+# X-Env-Var-drive: 127.0.0.1
+# X-Env-Var-drive-Desc: Drive address
+# X-Env-Var-drive-Required: true
+# X-Env-Var-drive-Valid: string
+# X-Env-Var-drive-Set: true
+#
+# METAEND
+---
+mmdebstrap:
+  setup-hooks:
+  - |-
+    cargo install cargo-deb --locked
+    cd puddle && cargo deb
+  customize-hooks:
+  - |-
+    mkdir -p $1/tmp/debs && cp -a puddle/target/debian/*.deb $1/tmp/debs
+    [ -n "$(ls -A $1/tmp/debs/*.deb 2>/dev/null)" ] && chroot $1 sh -c "apt install -y /tmp/debs/*.deb" || true
+  - sed -i "s/PUDDLE_DRIVE_ADDRESS=127.0.0.1/PUDDLE_DRIVE_ADDRESS=${IGconf_puddle_drive}/" $1/etc/systemd/system/puddle.service.d/override.conf
+  cleanup-hooks:
+  - rm -rf $1/tmp/debs

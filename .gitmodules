@@ -1,0 +1,6 @@
+[submodule "puddle"]
+	path = puddle
+	url = https://github.com/fenbyfluid/puddle.git
+[submodule "rpi-image-gen"]
+	path = rpi-image-gen
+	url = https://github.com/raspberrypi/rpi-image-gen.git

@@ -1,0 +1,3 @@
+# puddle build requirements
+build:cargo
+build::libudev-dev
