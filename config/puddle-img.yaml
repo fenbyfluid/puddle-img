@@ -2,16 +2,36 @@ device:
   layer: rpi5
   hostname: puddle
   user1: puddle
+  # TODO: Random gen this during build
+  user1pass: Puddle1!
+
+#ssh:
+#  pubkey_only: y
+#  pubkey_user1: path/to/key.pub
 
 image:
   name: puddle
+  # -- trad layout --
   layer: image-rpios
+  #boot_part_size: 128M
+  #root_part_size: 1G
   boot_part_size: 200%
-  root_part_size: 300%
+  root_part_size: 200%
+  # -- a/b layout --
+  #layer: image-rota
+  #boot_part_size: 128M
+  #system_part_size: 512M
+  #data_part_size: 1G
 
 layer:
   app: puddle-package
+  extra: misc-packages
+  net: systemd-net-wifi
   base: trixie-minbase
 
-puddle:
-  drive: 192.168.2.2
+net:
+  wifi_ap_ssid: Puddle
+  # TODO: Random gen this during build
+  wifi_ap_passphrase: ChangeMe
+  #wifi_sta_ssid: Your Network
+  #wifi_sta_passphrase: password

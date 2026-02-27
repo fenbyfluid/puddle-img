@@ -1,0 +1,119 @@
+# METABEGIN
+# X-Env-Layer-Name: systemd-net-wifi
+# X-Env-Layer-Desc: Minimal Wi-Fi STA/AP with systemd-networkd and wpasupplicant
+# X-Env-Layer-Requires: systemd-net-min
+#
+# X-Env-VarPrefix: net
+#
+# X-Env-Var-lan_range: 192.168.10.1/24
+# X-Env-Var-lan_range-Desc: LAN IP range
+# X-Env-Var-lan_range-Valid: string
+#
+# X-Env-Var-wifi_country: GB
+# X-Env-Var-wifi_country-Desc: Wi-Fi Country Code
+# X-Env-Var-wifi_country-Valid: string
+#
+# X-Env-Var-wifi_ap_range: 192.168.20.1/24
+# X-Env-Var-wifi_ap_range-Desc: Wi-Fi AP IP range
+# X-Env-Var-wifi_ap_range-Valid: string
+#
+# X-Env-Var-wifi_ap_frequency: 2412
+# X-Env-Var-wifi_ap_frequency-Desc: Wi-Fi AP Frequency
+# X-Env-Var-wifi_ap_frequency-Valid: 2412,2417,2422,2427,2432,2437,2442,2447,2452,2457,2462,2467,2472
+#
+# X-Env-Var-wifi_ap_ssid: Puddle
+# X-Env-Var-wifi_ap_ssid-Desc: Wi-Fi AP SSID
+# X-Env-Var-wifi_ap_ssid-Valid: string-or-empty
+#
+# X-Env-Var-wifi_ap_passphrase:
+# X-Env-Var-wifi_ap_passphrase-Desc: Wi-Fi AP Passphrase
+# X-Env-Var-wifi_ap_passphrase-Valid: string-or-empty
+#
+# X-Env-Var-wifi_sta_ssid:
+# X-Env-Var-wifi_sta_ssid-Desc: Wi-Fi Station SSID
+# X-Env-Var-wifi_sta_ssid-Valid: string-or-empty
+#
+# X-Env-Var-wifi_sta_passphrase:
+# X-Env-Var-wifi_sta_passphrase-Desc: Wi-Fi Station Passphrase
+# X-Env-Var-wifi_sta_passphrase-Valid: string-or-empty
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - iw
+    - wpasupplicant
+  customize-hooks:
+    - |-
+      #!/bin/bash
+      set -e
+      
+      # Overwrite the config from systemd-net-min
+      cat <<-EOF > $1/etc/systemd/network/01-eth0.network
+      [Match]
+      Name=eth0
+
+      [Link]
+      RequiredForOnline=no-carrier
+
+      [Network]
+      Address=${IGconf_net_lan_range}
+      DHCPServer=yes
+      ConfigureWithoutCarrier=yes
+      IPv6AcceptRA=no
+      EOF
+
+      cat <<-EOF > $1/etc/systemd/network/02-wlan0-ap.network
+      [Match]
+      Name=wlan0
+      WLANInterfaceType=ap
+
+      [Network]
+      Address=${IGconf_net_wifi_ap_range}
+      DHCPServer=yes
+      IPv6AcceptRA=no
+      EOF
+
+      cat <<-EOF > $1/etc/systemd/network/02-wlan0-station.network
+      [Match]
+      Name=wlan0
+      WLANInterfaceType=station
+
+      [Network]
+      DHCP=yes
+      EOF
+
+      cat <<-EOF > $1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+      ctrl_interface=/var/run/wpa_supplicant
+      ap_scan=1
+      country=${IGconf_net_wifi_country}
+      EOF
+      
+      if [ -n "${IGconf_net_wifi_sta_ssid}" ] && [ -n "${IGconf_net_wifi_sta_passphrase}" ]; then
+        cat <<-EOF >> $1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+      network={
+        priority=1
+        ssid="${IGconf_net_wifi_sta_ssid}"
+        psk="${IGconf_net_wifi_sta_passphrase}"
+      }
+      EOF
+      fi
+      
+      if [ -n "${IGconf_net_wifi_ap_ssid}" ] && [ -n "${IGconf_net_wifi_ap_passphrase}" ]; then
+        cat <<-EOF >> $1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+      network={
+        priority=0
+        mode=2
+        proto=RSN
+        key_mgmt=WPA-PSK WPA-PSK-SHA256
+        ieee80211w=1
+        pairwise=CCMP
+        group=CCMP
+        frequency=${IGconf_net_wifi_ap_frequency}
+        ssid="${IGconf_net_wifi_ap_ssid}"
+        psk="${IGconf_net_wifi_ap_passphrase}"
+      }
+      EOF
+      fi
+
+    - chroot "$1" /bin/systemctl enable wpa_supplicant@wlan0.service

@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: misc-packages
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - iproute2
+    - vim
+    - tcpdump
+    - less
+    - man-db
+    - polkitd
