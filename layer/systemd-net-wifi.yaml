@@ -48,6 +48,12 @@ mmdebstrap:
       #!/bin/bash
       set -e
       
+      # Mask default drop-in disabling mDNS support
+      mkdir -p $1/etc/systemd/resolved.conf.d
+      cat <<-EOF > $1/etc/systemd/resolved.conf.d/00-disable-mdns.conf
+      # This file masks /usr/lib/systemd/resolved.conf.d/00-disable-mdns.conf
+      EOF
+      
       # Overwrite the config from systemd-net-min
       cat <<-EOF > $1/etc/systemd/network/01-eth0.network
       [Match]
@@ -61,6 +67,7 @@ mmdebstrap:
       DHCPServer=yes
       ConfigureWithoutCarrier=yes
       IPv6AcceptRA=no
+      LLDP=yes
       EOF
 
       cat <<-EOF > $1/etc/systemd/network/02-wlan0-ap.network
@@ -72,6 +79,7 @@ mmdebstrap:
       Address=${IGconf_net_wifi_ap_range}
       DHCPServer=yes
       IPv6AcceptRA=no
+      MulticastDNS=yes
       EOF
 
       cat <<-EOF > $1/etc/systemd/network/02-wlan0-station.network
@@ -81,6 +89,7 @@ mmdebstrap:
 
       [Network]
       DHCP=yes
+      MulticastDNS=yes
       EOF
 
       cat <<-EOF > $1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf
