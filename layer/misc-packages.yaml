@@ -10,3 +10,12 @@ mmdebstrap:
     - less
     - man-db
     - polkitd
+  customize-hooks:
+    - |-
+      cat <<-EOF > $1/usr/bin/reboot-to-usb
+      set -e
+      vcmailbox 0x0003808b 4 4 0xf14
+      reboot
+      EOF
+      
+      chmod +x $1/usr/bin/reboot-to-usb

@@ -1,0 +1,22 @@
+device:
+  layer: rpi5
+  hostname: puddle-rescue
+  user1: puddle
+  #user1pass: Puddle1!
+
+image:
+  name: puddle-rescue
+  layer: image-rpios
+  boot_part_size: 96M
+  root_part_size: 1G
+
+layer:
+  app: puddle-imager
+  #net: systemd-net-wifi
+  base: trixie-minbase
+
+#net:
+#  wifi_ap_ssid: Puddle
+#  wifi_ap_passphrase: ChangeMe
+#  wifi_sta_ssid: Your Network
+#  wifi_sta_passphrase: password

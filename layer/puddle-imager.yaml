@@ -1,0 +1,44 @@
+# METABEGIN
+# X-Env-Layer-Name: puddle-imager
+# X-Env-Layer-Desc: Install puddle image on a local SD card from USB boot.
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - rpi-imager-cli
+  setup-hooks:
+    - '[ -f "${IGconf_sys_workroot}/image-puddle/puddle.img" ] && exit 0 || echo "No image found" && exit 1'
+  customize-hooks:
+    - xz --keep --verbose --stdout "${IGconf_sys_workroot}/image-puddle/puddle.img" > "$1/root/puddle.img.xz"
+    - |-
+      cat <<-EOF > $1/usr/bin/install-image
+      #!/bin/bash
+      set -euo pipefail
+      
+      echo mmc0 > /sys/class/leds/ACT/trigger
+      
+      rpi-imager-cli /root/puddle.img.xz /dev/mmcblk0
+      
+      # Flash the LED to indicate completion
+      echo timer > /sys/class/leds/ACT/trigger
+      
+      sleep 5
+      reboot
+      EOF
+      
+      chmod +x $1/usr/bin/install-image
+      
+      cat <<-EOF > $1/etc/systemd/system/install-image.service
+      [Unit]
+      Description=Install image on SD card
+      After=local-fs.target
+      
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/install-image
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+    - $BDEBSTRAP_HOOKS/enable-units "$1" install-image
