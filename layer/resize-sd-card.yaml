@@ -1,0 +1,40 @@
+# METABEGIN
+# X-Env-Layer-Name: resize-sd-card
+# X-Env-Layer-Requires: systemd-min
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - parted
+    - cloud-utils
+    - e2fsprogs
+  customize-hooks:
+    - |-
+      cat <<-'EOF' > $1/usr/libexec/resize-sd-card
+      #!/bin/sh
+      set -eu
+      PART=$(parted -msf /dev/mmcblk0 print | tail -n1 | cut -d: -f1)
+      growpart /dev/mmcblk0 "$PART"
+      resize2fs "/dev/mmcblk0p${PART}"
+      systemctl disable resize-sd-card.service || true
+      EOF
+      
+      chmod +x $1/usr/libexec/resize-sd-card
+      
+      cat <<-EOF > $1/etc/systemd/system/resize-sd-card.service
+      [Unit]
+      Description=Resize last SD card partition
+      DefaultDependencies=no
+      Before=basic.target
+      After=local-fs.target sysinit.target
+      ConditionPathExists=/dev/mmcblk0
+      
+      [Service]
+      Type=oneshot
+      RemainAfterExit=no
+      ExecStart=/usr/libexec/resize-sd-card
+      
+      [Install]
+      WantedBy=basic.target
+      EOF
+    - $BDEBSTRAP_HOOKS/enable-units "$1" resize-sd-card

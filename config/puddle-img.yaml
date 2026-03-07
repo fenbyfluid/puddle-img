@@ -26,6 +26,7 @@ layer:
   extra: misc-packages
   net: systemd-net-wifi
   config: eeprom-config
+  resize: resize-sd-card
   base: trixie-minbase
 
 net:
