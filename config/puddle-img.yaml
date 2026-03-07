@@ -13,20 +13,19 @@ image:
   name: puddle
   # -- trad layout --
   layer: image-rpios
-  #boot_part_size: 128M
-  #root_part_size: 1G
-  boot_part_size: 200%
-  root_part_size: 200%
+  boot_part_size: 96M
+  root_part_size: 2G
   # -- a/b layout --
   #layer: image-rota
-  #boot_part_size: 128M
-  #system_part_size: 512M
+  #boot_part_size: 96M
+  #system_part_size: 1G
   #data_part_size: 1G
 
 layer:
   app: puddle-package
   extra: misc-packages
   net: systemd-net-wifi
+  config: eeprom-config
   base: trixie-minbase
 
 net:
