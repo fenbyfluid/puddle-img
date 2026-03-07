@@ -1,0 +1,64 @@
+# METABEGIN
+# X-Env-Layer-Name: questdb
+# X-Env-Layer-Desc: Install QuestDB server.
+#
+# X-Env-VarPrefix: questdb
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - default-jre-headless
+  customize-hooks:
+    - curl -s https://dl.questdb.io/snapshots/questdb-latest-no-jre-bin.tar.gz -o $1/tmp/questdb.tar.gz
+    - mkdir -p $1/usr/share/questdb
+    - tar -xf $1/tmp/questdb.tar.gz --strip-components 1 -C $1/usr/share/questdb --wildcards '*/questdb.jar'
+    # TODO: Figure out data storage directory for rota images, this is per-slot.
+    - chroot $1 adduser --system --group --home /var/lib/questdb questdb
+    - |-
+      cat <<-EOF > $1/etc/systemd/system/questdb.service
+      [Unit]
+      Description=QuestDB
+      Documentation=https://www.questdb.com/docs/
+      After=network.target
+      
+      [Service]
+      Type=simple
+      Restart=always
+      RestartSec=2
+      ExecStart=/usr/bin/java \
+      --add-exports java.base/jdk.internal.math=io.questdb \
+      -p /usr/share/questdb/questdb.jar \
+      -m io.questdb/io.questdb.ServerMain \
+      -DQuestDB-Runtime-66535 \
+      -ea -Dnoebug \
+      -XX:+UnlockExperimentalVMOptions \
+      -XX:+AlwaysPreTouch \
+      -XX:+UseParallelOldGC \
+      -d \$STATE_DIRECTORY
+      ExecReload=/bin/kill -s HUP \$MAINPID
+      LimitNOFILE=1048576
+      StandardError=journal
+      SyslogIdentifier=questdb
+      
+      User=questdb
+      Group=questdb
+      ProtectSystem=strict
+      ProtectHome=yes
+      PrivateTmp=yes
+      StateDirectory=questdb
+      
+      Environment=QDB_HTTP_SECURITY_READONLY=true
+      Environment=QDB_HTTP_MIN_ENABLED=false
+      Environment=QDB_PG_ENABLED=false
+      Environment=QDB_LINE_DEFAULT_PARTITION_BY=DAY
+      Environment=QDB_LINE_HTTP_ENABLED=false
+      Environment=QDB_LINE_TCP_ENABLED=true
+      Environment=QDB_LINE_TCP_NET_BIND_TO=127.0.0.1:9009
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+    - $BDEBSTRAP_HOOKS/enable-units "$1" questdb
+  cleanup-hooks:
+    - rm -f $1/tmp/questdb.tar.gz

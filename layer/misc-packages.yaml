@@ -1,5 +1,7 @@
 # METABEGIN
 # X-Env-Layer-Name: misc-packages
+# X-Env-Layer-Requires: rpi-user-credentials
+# X-Env-VarRequires: IGconf_device_user1
 # METAEND
 ---
 mmdebstrap:
@@ -10,6 +12,7 @@ mmdebstrap:
     - less
     - man-db
     - polkitd
+    - htop
   customize-hooks:
     - |-
       cat <<-EOF > $1/usr/bin/reboot-to-usb
@@ -19,3 +22,16 @@ mmdebstrap:
       EOF
       
       chmod +x $1/usr/bin/reboot-to-usb
+    - |-
+      uchroot $1 'mkdir -m 0700 -p ${HOME}/.config/htop'
+      uchroot $1 'install -m 0600 /dev/null ${HOME}/.config/htop/htoprc'
+      cat <<-EOF >> $1/home/$IGconf_device_user1/.config/htop/htoprc
+      htop_version=3.4.1
+      config_reader_min_version=3
+      hide_userland_threads=1
+      header_layout=two_67_33
+      column_meters_0=AllCPUs Memory
+      column_meter_modes_0=1 1
+      column_meters_1=Tasks Systemd DiskIO LoadAverage Uptime
+      column_meter_modes_1=2 2 2 2 2
+      EOF

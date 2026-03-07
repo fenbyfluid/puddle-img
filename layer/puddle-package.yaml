@@ -2,6 +2,7 @@
 # X-Env-Layer-Name: puddle-package
 # X-Env-Layer-Category: general
 # X-Env-Layer-Desc: Build and install puddle package.
+# X-Env-Layer-Requires: questdb
 #
 # X-Env-VarPrefix: puddle
 #
@@ -17,13 +18,14 @@ mmdebstrap:
   setup-hooks:
     - |-
       cargo install cargo-deb --locked
-      cd puddle && cargo deb
+      ( cd puddle && cargo deb )
   customize-hooks:
     - |-
       mkdir -p $1/tmp/debs && cp -a puddle/target/debian/*.deb $1/tmp/debs
-      [ -n "$(ls -A $1/tmp/debs/*.deb 2>/dev/null)" ] && chroot $1 sh -c "apt install -y /tmp/debs/*.deb" || true
+      chroot $1 sh -c "apt install -y /tmp/debs/*.deb"
     - sed -i "s/PUDDLE_DRIVE_ADDRESS=127.0.0.1/PUDDLE_DRIVE_ADDRESS=${IGconf_puddle_drive}/" $1/etc/systemd/system/puddle.service.d/override.conf
     - $BDEBSTRAP_HOOKS/enable-units "$1" puddle
+    - $BDEBSTRAP_HOOKS/enable-units "$1" puddle-rpi-stats
     - |-
       cat <<-EOF > $1/etc/systemd/system/linmot-rstalk-proxy.service
       [Unit]
