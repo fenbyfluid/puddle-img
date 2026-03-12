@@ -1,0 +1,41 @@
+# METABEGIN
+# X-Env-Layer-Name: web-server
+# X-Env-Layer-Requires: questdb
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - nginx
+
+  customize-hooks:
+    - cp -r puddle-web $1/usr/share/
+    - rm -f $1/etc/nginx/sites-enabled/default
+    - |-
+      cat <<-'EOF' > $1/etc/nginx/sites-available/puddle
+      upstream questdb {
+        server 127.0.0.1:9000;
+      }
+      
+      server {
+        server_name _;
+        listen 80 default_server;
+        listen [::]:80 default_server;
+      
+        root /usr/share/puddle-web;
+        index index.html;
+      
+        location /questdb {
+          alias /var/lib/questdb/public;
+        }
+        
+        location ~ /questdb/(imp|chk|exp|settings|exec|warnings) {
+          proxy_pass http://questdb;
+        }  
+  
+        # QuestDB's base path setting misses the VSCode WebWorker
+        location /assets/vs {
+          root /var/lib/questdb/public;
+        }
+      }
+      EOF
+    - ln -s ../sites-available/puddle $1/etc/nginx/sites-enabled/puddle

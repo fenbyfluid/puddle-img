@@ -22,6 +22,7 @@ image:
   #data_part_size: 1G
 
 layer:
+  web: web-server
   app: puddle-package
   extra: misc-packages
   net: systemd-net-wifi

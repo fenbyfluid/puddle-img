@@ -13,6 +13,7 @@ mmdebstrap:
     - man-db
     - polkitd
     - htop
+    - bash-completion
   customize-hooks:
     - |-
       cat <<-EOF > $1/usr/bin/reboot-to-usb

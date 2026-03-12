@@ -48,11 +48,14 @@ mmdebstrap:
       PrivateTmp=yes
       StateDirectory=questdb
       
-      Environment=QDB_HTTP_SECURITY_READONLY=true
+      Environment=QDB_LOG_W_STDOUT_LEVEL=ERROR
+      Environment=QDB_HTTP_NET_BIND_TO=127.0.0.1:9000
+      Environment=QDB_HTTP_SECURITY_READONLY=false
+      Environment=QDB_HTTP_CONTEXT_WEB_CONSOLE=/questdb
       Environment=QDB_HTTP_MIN_ENABLED=false
       Environment=QDB_PG_ENABLED=false
       Environment=QDB_LINE_DEFAULT_PARTITION_BY=DAY
-      Environment=QDB_LINE_HTTP_ENABLED=false
+      Environment=QDB_LINE_HTTP_ENABLED=true
       Environment=QDB_LINE_TCP_ENABLED=true
       Environment=QDB_LINE_TCP_NET_BIND_TO=127.0.0.1:9009
       
