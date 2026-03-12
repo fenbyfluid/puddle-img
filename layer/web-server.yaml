@@ -1,6 +1,6 @@
 # METABEGIN
 # X-Env-Layer-Name: web-server
-# X-Env-Layer-Requires: questdb
+# X-Env-Layer-Requires: questdb,vnc-weston
 # METAEND
 ---
 mmdebstrap:
@@ -14,6 +14,15 @@ mmdebstrap:
       cat <<-'EOF' > $1/etc/nginx/sites-available/puddle
       upstream questdb {
         server 127.0.0.1:9000;
+      }
+      
+      upstream websockify {
+        server 127.0.0.1:6080;
+      }
+      
+      map $http_upgrade $connection_upgrade {
+        default upgrade;
+        ''      close;
       }
       
       server {
@@ -35,6 +44,23 @@ mmdebstrap:
         # QuestDB's base path setting misses the VSCode WebWorker
         location /assets/vs {
           root /var/lib/questdb/public;
+        }
+      
+        location = /websockify {
+          proxy_pass http://websockify;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection $connection_upgrade;
+          proxy_set_header Host $host;
+          proxy_cache_bypass $http_upgrade;
+        }
+      
+        location /vnc/core {
+          alias /usr/share/novnc/core;
+        }
+      
+        location /vnc/vendor {
+          alias /usr/share/novnc/vendor;
         }
       }
       EOF

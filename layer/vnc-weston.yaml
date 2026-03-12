@@ -1,0 +1,83 @@
+# METABEGIN
+# X-Env-Layer-Name: vnc-weston
+# X-Env-Layer-Requires: rpi-user-credentials
+# X-Env-VarRequires: IGconf_device_user1
+# METAEND
+---
+mmdebstrap:
+  packages:
+    # TODO: This package pulls in many deps, consider an alt VNC proxy and embedding NoVNC directly into the web UI
+    # TODO: RDP would be nicer than VNC, but there's no ready-to-go IronRDP WASM build to use
+    - novnc
+    # TODO: The RPi repos actually contain `wayvnc` (built-in WS support), so we could look at that + labwc instead
+    - weston
+
+  customize-hooks:
+    # Configure Weston
+    - |-
+      # Weston's VNC server insists on authentication, which doesn't work with NoVNC without HTTPS
+      # We LD_PRELOAD this shared object to drop the authentication enablement call
+      gcc -Wall -fPIC -shared -fvisibility=hidden -o $1/usr/lib/neatvnc-disable-auth.so -x c - <<-'EOF'
+      #include <stdio.h>
+      __attribute__((visibility("default")))
+      int nvnc_enable_auth(void *self, int flags, void *auth_fn, void *userdata) {
+        puts("nvnc_enable_auth() called, ignoring");
+        return 0;
+      }  
+      EOF
+      strip $1/usr/lib/neatvnc-disable-auth.so
+    - |-
+      set -e
+      uchroot $1 'mkdir -m 0700 -p ${HOME}/.config'
+      uchroot $1 'install -m 0600 /dev/null ${HOME}/.config/weston.ini'
+      cat <<-EOF > $1/home/${IGconf_device_user1}/.config/weston.ini
+      [core]
+      shell=desktop
+      backend=vnc
+      
+      [shell]
+      locking=false
+      animation=none
+      close-animation=none
+      startup-animation=none
+      EOF
+      
+      cat <<-EOF > $1/etc/systemd/system/${IGconf_device_user1}-weston.service
+      [Unit]
+      Description=Weston Desktop
+      
+      [Service]
+      Type=notify
+      RuntimeDirectory=${IGconf_device_user1}-weston
+      RuntimeDirectoryMode=0700
+      Environment=LD_PRELOAD=/usr/lib/neatvnc-disable-auth.so
+      Environment=XDG_RUNTIME_DIR=%t/${IGconf_device_user1}-weston/
+      ExecStart=weston --modules=systemd-notify.so --address=127.0.0.1 --disable-transport-layer-security
+      Restart=always
+      RestartSec=10
+      User=${IGconf_device_user1}
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+    - $BDEBSTRAP_HOOKS/enable-units "$1" "${IGconf_device_user1}-weston"
+
+    # Start Websockify for NoVNC
+    - |-
+      cat <<-EOF > $1/etc/systemd/system/${IGconf_device_user1}-websockify.service
+      [Unit]
+      Description=NoVNC Websockify
+      After=${IGconf_device_user1}-weston.service
+      Requires=${IGconf_device_user1}-weston.service
+      
+      [Service]
+      Type=simple
+      ExecStart=websockify 127.0.0.1:6080 127.0.0.1:5900
+      Restart=always
+      RestartSec=10
+      User=${IGconf_device_user1}
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+    - $BDEBSTRAP_HOOKS/enable-units "$1" "${IGconf_device_user1}-websockify"
