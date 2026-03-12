@@ -12,9 +12,10 @@ device:
 image:
   name: puddle
   # -- trad layout --
+  # 2G is enough for base functionality, but not the linmot-talk-package layer
   layer: image-rpios
   boot_part_size: 96M
-  root_part_size: 2G
+  root_part_size: 6G
   # -- a/b layout --
   #layer: image-rota
   #boot_part_size: 96M
@@ -23,6 +24,7 @@ image:
 
 layer:
   web: web-server
+  linmot: linmot-talk-package
   app: puddle-package
   extra: misc-packages
   net: systemd-net-wifi

@@ -1,0 +1,52 @@
+# METABEGIN
+# X-Env-Layer-Name: linmot-talk-package
+# X-Env-Layer-Requires: rpi-boot-firmware,rpi-linux-v8,vnc-weston
+# X-Env-VarRequires: IGconf_device_user1
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - exe-thumbnailer
+
+  customize-hooks:
+    # Download and install https://github.com/AndreRH/hangover
+    - mkdir -p $1/tmp/hangover-debs
+    - wget -nc -P ${IGconf_sys_workroot}/ https://github.com/AndreRH/hangover/releases/download/hangover-11.0/hangover_11.0_debian13_trixie_arm64.tar
+    - bash -c 'sha256sum -c <(echo 354ce13e353fc6137fd2fd8848edf1aef08e90ed8befae805d842c03dca91fa3 ${IGconf_sys_workroot}/hangover_11.0_debian13_trixie_arm64.tar)'
+    - tar -xvf ${IGconf_sys_workroot}/hangover_11.0_debian13_trixie_arm64.tar -C $1/tmp/hangover-debs
+    - chroot $1 sh -c "apt install -y /tmp/hangover-debs/*.deb"
+    - |-
+      cat <<-EOF >> $1/boot/firmware/config.txt
+      
+      [all]
+      # https://github.com/AndreRH/hangover/wiki/Page-Size
+      kernel=kernel8.img
+      EOF
+
+    # Download and extract LinMot-Talk
+    # TODO: Serial connection not working yet, seemingly due to https://bugs.winehq.org/show_bug.cgi?id=7526
+    - wget -nc -P ${IGconf_sys_workroot}/ https://linmot.com/fileadmin/user_upload/Downloads/software-firmware/servo-drives/linmot-talk-6/0187-0001_SW_6V14_LinMot-Talk_6.14_Build_20260111.zip
+    - bash -c 'sha256sum -c <(echo 497f2f68e6204313ddcc0906d5bb6a22f843279feaa81703ca036677f41fe641 ${IGconf_sys_workroot}/0187-0001_SW_6V14_LinMot-Talk_6.14_Build_20260111.zip)'
+    - mkdir -p $1/opt
+    - unzip ${IGconf_sys_workroot}/0187-0001_SW_6V14_LinMot-Talk_6.14_Build_20260111.zip -d $1/opt/
+    - mv $1/opt/*_LinMot-Talk_* $1/opt/linmot-talk
+    - chroot "$1" exe-thumbnailer -s 24 -f /opt/linmot-talk/LinMot-Talk6.exe /opt/linmot-talk/linmot-talk-icon.png
+
+    # Configure Weston
+    - |-
+      set -e
+      cat <<-EOF >> $1/home/${IGconf_device_user1}/.config/weston.ini
+      
+      [launcher]
+      icon=/opt/linmot-talk/linmot-talk-icon.png
+      path=HODLL=libwow64fex.dll /usr/bin/wine /opt/linmot-talk/LinMot-Talk6.exe
+      displayname=LinMot-Talk
+      
+      [launcher]
+      icon=/usr/share/weston/terminal.png
+      path=/usr/bin/weston-terminal
+      displayname=Terminal
+      EOF
+
+  cleanup-hooks:
+    - rm -rf $1/tmp/hangover-debs

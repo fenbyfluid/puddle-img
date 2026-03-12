@@ -8,7 +8,7 @@ image:
   name: puddle-rescue
   layer: image-rpios
   boot_part_size: 96M
-  root_part_size: 1G
+  root_part_size: 2G
 
 layer:
   app: puddle-imager
