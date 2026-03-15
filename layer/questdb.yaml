@@ -48,6 +48,7 @@ mmdebstrap:
       PrivateTmp=yes
       StateDirectory=questdb
       
+      Environment=QDB_TELEMETRY_ENABLED=false
       Environment=QDB_LOG_W_STDOUT_LEVEL=ERROR
       Environment=QDB_HTTP_NET_BIND_TO=127.0.0.1:9000
       Environment=QDB_HTTP_SECURITY_READONLY=false

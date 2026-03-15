@@ -7,8 +7,11 @@ mmdebstrap:
   packages:
     - nginx
 
+  setup-hooks:
+    - ( cd puddle-web && npm install && npm run build )
+
   customize-hooks:
-    - cp -r puddle-web $1/usr/share/
+    - cp -r puddle-web/build/client $1/usr/share/puddle-web
     - rm -f $1/etc/nginx/sites-enabled/default
     - |-
       cat <<-'EOF' > $1/etc/nginx/sites-available/puddle
@@ -33,16 +36,16 @@ mmdebstrap:
         root /usr/share/puddle-web;
         index index.html;
       
-        location /questdb {
-          alias /var/lib/questdb/public;
+        location /questdb/ {
+          alias /var/lib/questdb/public/;
         }
-        
+      
         location ~ /questdb/(imp|chk|exp|settings|exec|warnings) {
           proxy_pass http://questdb;
-        }  
-  
+        }
+      
         # QuestDB's base path setting misses the VSCode WebWorker
-        location /assets/vs {
+        location = /assets/vs/base/worker/workerMain.js {
           root /var/lib/questdb/public;
         }
       
@@ -55,12 +58,8 @@ mmdebstrap:
           proxy_cache_bypass $http_upgrade;
         }
       
-        location /vnc/core {
-          alias /usr/share/novnc/core;
-        }
-      
-        location /vnc/vendor {
-          alias /usr/share/novnc/vendor;
+        location / {
+          try_files $uri $uri/ /index.html;
         }
       }
       EOF

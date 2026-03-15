@@ -28,7 +28,6 @@ mmdebstrap:
       cat <<-EOF > $1/etc/systemd/system/puddle.service.d/questdb.conf
       [Unit]
       After=questdb.service
-      Requires=questdb.service
       
       [Service]
       Environment=QDB_CLIENT_CONF="tcp::addr=127.0.0.1:9009;"

@@ -1,3 +1,6 @@
 # puddle build requirements
 build:cargo
 build::libudev-dev
+
+# puddle-web build requirements
+build:npm

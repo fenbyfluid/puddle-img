@@ -6,9 +6,9 @@
 ---
 mmdebstrap:
   packages:
-    # TODO: This package pulls in many deps, consider an alt VNC proxy and embedding NoVNC directly into the web UI
+    # This is the WebSocket proxy used by NoVNC
     # TODO: RDP would be nicer than VNC, but there's no ready-to-go IronRDP WASM build to use
-    - novnc
+    - websockify
     # TODO: The RPi repos actually contain `wayvnc` (built-in WS support), so we could look at that + labwc instead
     - weston
 
@@ -68,7 +68,6 @@ mmdebstrap:
       [Unit]
       Description=NoVNC Websockify
       After=${IGconf_device_user1}-weston.service
-      Requires=${IGconf_device_user1}-weston.service
       
       [Service]
       Type=simple
